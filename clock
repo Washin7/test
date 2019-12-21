@@ -1,0 +1,52 @@
+@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_alarm_clock);
+		time = (TextView) findViewById(R.id.time);
+		time.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+				addAlarm();
+			}
+		});
+	}
+
+
+	private void addAlarm() {
+		// TODO Auto-generated method stub
+		calendar.setTimeInMillis(System.currentTimeMillis());
+		int mHour = calendar.get(Calendar.HOUR_OF_DAY);
+		int mMinute = calendar.get(Calendar.MINUTE);
+
+		new TimePickerDialog(AlarmClockActivity.this, new TimePickerDialog.OnTimeSetListener() {
+			public void onTimeSet(TimePicker view, int hourOfDay, int minute) {
+				
+				calendar.setTimeInMillis(System.currentTimeMillis());
+				calendar.set(Calendar.HOUR_OF_DAY, hourOfDay);
+				calendar.set(Calendar.MINUTE, minute);
+				calendar.set(Calendar.SECOND, 0);
+				calendar.set(Calendar.MILLISECOND, 0);
+
+			
+				Intent intent = new Intent(AlarmClockActivity.this, CallAlarmReceiver.class);
+				
+				PendingIntent sender = PendingIntent.getBroadcast(AlarmClockActivity.this, 0, intent, 0);
+	
+				AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+//				am.setRepeating(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), 0, sender);
+				am.set(AlarmManager.RTC_WAKEUP, calendar.getTimeInMillis(), sender);
+
+				String tmpS = format(hourOfDay) + ":" + format(minute);
+				time.setText(tmpS);
+
+			
+				SharedPreferences time1Share = getPreferences(0);
+				SharedPreferences.Editor editor = time1Share.edit();
+				editor.putString("TIME1", tmpS);
+				editor.commit();
+
+				Toast.makeText(AlarmClockActivity.this, "设置闹钟时间为" + tmpS, Toast.LENGTH_SHORT).show();
+			}
+		}, mHour, mMinute, true).show();
+	}
