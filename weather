@@ -1,0 +1,91 @@
+public class WeatherActivity extends BaseActivity {
+    private ListView listView;
+    //声明AMapLocationClient类对象
+    public AMapLocationClient mLocationClient = null;
+    String city;
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_weather);
+
+        initToolBar("实时天气",true);
+        listView = (ListView) findViewById(R.id.list);
+
+        //判断是否已经赋予权限
+        if (ContextCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            //如果应用之前请求过此权限但用户拒绝了请求，此方法将返回 true。
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this,
+                    Manifest.permission.ACCESS_FINE_LOCATION)) {//这里可以写个对话框
+            } else {
+                //申请权限，字符串数组内是一个或多个要申请的权限
+                ActivityCompat.requestPermissions(this,
+                        new String[]{Manifest.permission.ACCESS_FINE_LOCATION,}, 1);
+            }
+        }
+
+//初始化定位
+        mLocationClient = new AMapLocationClient(getApplicationContext());
+//设置定位回调监听
+        mLocationClient.setLocationListener(mAMapLocationListener);
+        //该方法默认为false。
+        AMapLocationClientOption mLocationOption = new AMapLocationClientOption();
+        //获取一次定位结果：
+//该方法默认为false。
+        mLocationOption.setOnceLocation(true);
+
+//获取最近3s内精度最高的一次定位结果：
+//设置setOnceLocationLatest(boolean b)接口为true，启动定位时SDK会返回最近3s内精度最高的一次定位结果。
+// 如果设置其为true，setOnceLocation(boolean b)接口也会被设置为true，反之不会，默认为false。
+        mLocationOption.setOnceLocationLatest(true);
+        mLocationClient.setLocationOption(mLocationOption);
+//启动定位
+        mLocationClient.startLocation();
+
+    }
+    //异步获取定位结果
+    AMapLocationListener mAMapLocationListener = new AMapLocationListener() {
+        @Override
+        public void onLocationChanged(AMapLocation amapLocation) {
+            if (amapLocation != null) {
+                if (amapLocation.getErrorCode() == 0) {
+                    //解析定位结果
+
+                    city = amapLocation.getCity();
+                    Log.e("bing", city);
+                    showDialog("正在加载天气数据...");
+                    createRetrofit().create(RequestImpl.class).getWeather(city,"0f024f4ce7994e468014ba8c0d5ecb29").enqueue(new Callback<WeatherBean>() {
+                        @Override
+                        public void onResponse(Call<WeatherBean> call, Response<WeatherBean> response) {
+                            dimissDialog();
+                            WeatherBean weatherBean=response.body();
+                            if (weatherBean.getHeWeather5().size()>0){
+                                WeatherAdapter adapter=new WeatherAdapter(WeatherActivity.this,weatherBean);
+                                listView.setAdapter(adapter);
+                            }else {
+                                Toast.makeText(WeatherActivity.this,"获取天气失败",Toast.LENGTH_SHORT);
+                            }
+
+                        }
+
+                        @Override
+                        public void onFailure(Call<WeatherBean> call, Throwable t) {
+                            dimissDialog();
+                            Toast.makeText(WeatherActivity.this,"网络错误",Toast.LENGTH_SHORT);
+                        }
+                    });
+                }
+            }
+        }
+    };
+        
+    public Retrofit createRetrofit() {
+        return new Retrofit.Builder().baseUrl("https://free-api.heweather.com/v5/")
+                .addConverterFactory(ScalarsConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+    }
+
+
+}
