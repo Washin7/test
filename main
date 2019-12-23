@@ -1,0 +1,49 @@
+public class MainActivity extends BaseActivity {
+
+	
+	private String[] tags = { "B_tag", "C_tag","D_tag" };
+	
+	private String[] titles = { "闹钟","日程" ,"备忘录"};
+
+	// 用于跳转至不同的Activity
+	private Intent[] intents = new Intent[3];
+
+	@Override
+	protected void onCreate(Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+		setContentView(R.layout.activity_main);
+		initToolBar("TIME", false);
+		TabHost tabHost = (TabHost) findViewById(R.id.tabhost);
+		TabWidget tabWidget = (TabWidget) findViewById(android.R.id.tabs);
+		tabWidget.setBackgroundColor(Color.WHITE);
+		
+		LocalActivityManager manager = new LocalActivityManager(MainActivity.this, false);
+		
+		manager.dispatchCreate(savedInstanceState);
+		
+		tabHost.setup(manager);
+		initIntent();
+		for (int i = 0; i < intents.length; i++) {
+			// 加载底部
+			LayoutInflater inflater = this.getLayoutInflater();
+			View view = inflater.inflate(R.layout.tab, null);
+			TextView textView = (TextView) view.findViewById(R.id.tv_item);
+			textView.setText(titles[i]);
+			// 创建选项卡
+			TabHost.TabSpec spec = tabHost.newTabSpec(tags[i]);
+			spec.setIndicator(view);
+			// 设置每个页面
+			spec.setContent(intents[i]);
+			// 将创建的选项卡添加至tabHost上
+			tabHost.addTab(spec);
+		}
+	}
+
+
+	
+	public void initIntent() {
+		intents[0] = new Intent(this, AlarmClockActivity.class);
+		intents[1] = new Intent(this, CalendarActivity.class);
+		intents[2] = new Intent(this, MemorandumActivity.class);
+	}
+}
